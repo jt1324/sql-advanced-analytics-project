@@ -80,13 +80,17 @@ SELECT
     year,
     month,
     total_sales,
-    SUM(total_sales) OVER(ORDER BY year, month) AS running_total_sales
+    SUM(total_sales) OVER(PARTITION BY year ORDER BY year, month) AS running_total_sales,
+    AVG(avg_price) OVER(PARTITION BY year ORDER BY year, month) AS moving_avg_price
 FROM (
     SELECT
         strftime('%Y', order_date) AS year,
         strftime('%m', order_date) AS month,
-        SUM(sales_amount) AS total_sales
+        SUM(sales_amount) AS total_sales,
+        AVG(price) AS avg_price
     FROM fact_sales
     WHERE order_date IS NOT NULL
     GROUP BY strftime('%Y', order_date),  strftime('%m', order_date)
 );
+
+
