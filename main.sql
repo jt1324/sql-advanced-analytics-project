@@ -34,3 +34,21 @@ WITH year AS (
         printf('%,d', SUM(sales_amount)) AS total_sales
     FROM year
 GROUP BY order_year;
+
+-- Metrics by month (all years together)
+
+WITH month AS (
+    SELECT
+        strftime('%m', order_date) AS order_month,
+        quantity,
+        sales_amount
+    FROM fact_sales
+    WHERE order_date IS NOT NULL
+)
+    SELECT
+        order_month,
+        printf('%,d', COUNT(quantity)) AS qty_orders,
+        printf('%,d', SUM(sales_amount)) AS total_sales
+    FROM month
+GROUP BY order_month;
+
