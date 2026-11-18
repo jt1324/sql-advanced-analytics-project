@@ -94,3 +94,36 @@ FROM (
 );
 
 
+-- Performance analysis
+
+WITH yearly_prod_sales AS (
+    SELECT
+        strftime('%Y', s.order_date) AS year,
+        SUM(s.sales_amount) AS current_sales,
+        p.product_name
+    FROM fact_sales s
+        LEFT JOIN dim_products p
+            ON s.product_key = p.product_key
+    WHERE s.order_date IS NOT NULL
+    GROUP BY  strftime('%Y', s.order_date), p.product_name
+)
+SELECT
+    year,
+    product_name,
+    current_sales,
+    AVG(current_sales) OVER(PARTITION BY product_name) AS avg_sales,
+    (current_sales - AVG(current_sales) OVER(PARTITION BY product_name)) AS variance_avg,
+    CASE
+        WHEN (current_sales - AVG(current_sales) OVER(PARTITION BY product_name)) > 0 THEN 'Above Avg'
+        WHEN (current_sales - AVG(current_sales) OVER(PARTITION BY product_name)) < 0 THEN 'Below Avg'
+        ELSE 'Same Avg'
+    END AS avg_var_indicator,
+    LAG(current_sales) OVER(PARTITION BY product_name ORDER BY year) AS prev_year_sales,
+    (current_sales - LAG(current_sales) OVER(PARTITION BY product_name ORDER BY year)) AS variance_prev_year_sales,
+    CASE
+        WHEN (current_sales - LAG(current_sales) OVER(PARTITION BY product_name ORDER BY year)) > 0 THEN 'Increase'
+        WHEN (current_sales - LAG(current_sales) OVER(PARTITION BY product_name ORDER BY year)) < 0 THEN 'Decrease'
+        ELSE 'No Changes'
+    END AS prev_year_sale_var_indicator
+FROM yearly_prod_sales
+ORDER BY product_name, year;
