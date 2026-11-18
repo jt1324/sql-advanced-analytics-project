@@ -208,3 +208,80 @@ SELECT
 FROM cust_segment
 GROUP BY customer_segment
 ORDER BY COUNT(customer_key) DESC;
+
+
+-- Build customer report
+
+DROP VIEW IF EXISTS report_customers;
+
+CREATE VIEW report_customers AS 
+WITH base_query AS (
+    SELECT
+        s.order_number,
+        s.product_key,
+        s.order_date,
+        s.quantity,
+        s.sales_amount,
+        c.customer_key,
+        c.customer_number,
+        TRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')) AS customer_name,
+        CAST((julianday('now') - julianday(c.birthdate)) / 365.25 AS INTEGER) AS age
+    FROM fact_sales s
+        LEFT JOIN dim_customers c
+            ON s.customer_key = c.customer_key
+    WHERE s.order_date IS NOT NULL
+) , customer_aggregation AS (
+
+    SELECT
+        customer_key,
+        customer_number,
+        customer_name,
+        age,
+        COUNT(DISTINCT order_number) AS total_orders,
+        SUM(sales_amount) AS total_sales,
+        SUM(quantity) AS total_quantity,
+        COUNT(DISTINCT product_key) AS total_products,
+        MAX(order_date) AS last_order_date,
+        (CAST(strftime('%Y', MAX(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MAX(order_date)) AS INTEGER))
+        - (CAST(strftime('%Y', MIN(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MIN(order_date)) AS INTEGER)) AS lifespan
+    FROM base_query
+    GROUP BY customer_key, customer_number, customer_name, age
+)
+SELECT
+    customer_key,
+    customer_number,
+    customer_name,
+    age,
+    CASE
+        WHEN age < 20 THEN 'Under 20'
+        WHEN age < 29 THEN '20-30'
+        WHEN age < 39 THEN '30-40'
+        WHEN age < 49 THEN '40-50'
+        ELSE '50 and Above'
+    END AS age_rage,
+    CASE
+        WHEN lifespan >= 12 AND total_sales > 5000 THEN 'VIP'
+        WHEN lifespan >= 12 AND total_sales <= 5000 THEN 'Regular'
+        ELSE 'New'
+    END AS customer_segment,
+    (CAST(strftime('%Y', 'now') AS INTEGER) * 12 + CAST(strftime('%m', 'now') AS INTEGER))
+    - (CAST(strftime('%Y', last_order_date) AS INTEGER) * 12 + CAST(strftime('%m', last_order_date) AS INTEGER)) AS recency,
+    total_orders,
+    total_sales,
+    total_quantity,
+    total_products,
+    lifespan,
+    CASE 
+        WHEN total_sales = 0 THEN 0
+        ELSE total_sales / total_orders 
+    END AS avg_order_value,
+    CASE 
+        WHEN lifespan = 0 THEN total_sales
+        ELSE total_sales / lifespan 
+    END AS avg_monthly_spend
+FROM customer_aggregation;
+
+
+SELECT
+    *
+FROM report_customers;
