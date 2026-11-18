@@ -150,3 +150,28 @@ SELECT
     CONCAT(ROUND((CAST(total_sales AS FLOAT) / SUM(total_sales) OVER()) * 100, 2), '%') AS pct_total
 FROM category
 ORDER BY rn;
+
+
+-- Data segmentation
+-- Volume by cost range
+
+WITH prod_segments AS (
+    SELECT
+        product_key,
+        product_name,
+        cost,
+        CASE
+            WHEN cost <= 100 THEN 'Below 100'
+            WHEN cost <= 500 THEN '101-500'
+            WHEN cost <= 1000 THEN '501-1000'
+            ELSE 'Above 1000'
+        END AS cost_range
+    FROM dim_products
+)
+SELECT
+    cost_range,
+    COUNT(product_key) AS total_products
+FROM prod_segments
+GROUP BY cost_range
+ORDER BY COUNT(product_key) DESC;
+
