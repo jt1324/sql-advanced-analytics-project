@@ -175,3 +175,36 @@ FROM prod_segments
 GROUP BY cost_range
 ORDER BY COUNT(product_key) DESC;
 
+-- Customer segmentation by purchases
+
+WITH cust_segment AS (
+    WITH cust_orders AS (
+        SELECT
+            c.customer_key,
+            SUM(s.sales_amount) AS total_purchase,
+            MIN(order_date) AS first_order,
+            MAX(order_date) AS last_order,
+            (CAST(strftime('%Y', MAX(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MAX(order_date)) AS INTEGER))
+            - (CAST(strftime('%Y', MIN(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MIN(order_date)) AS INTEGER)) AS lifespan
+        FROM fact_sales s
+            LEFT JOIN dim_customers c
+                ON c.customer_key = s.customer_key
+        GROUP BY c.customer_key
+    )
+    SELECT
+        customer_key,
+        total_purchase,
+        lifespan,
+        CASE
+            WHEN lifespan >= 12 AND total_purchase > 5000 THEN 'VIP'
+            WHEN lifespan >= 12 AND total_purchase <= 5000 THEN 'Regular'
+            ELSE 'New'
+        END AS customer_segment
+    FROM cust_orders
+)
+SELECT
+    customer_segment,
+    printf('%,d', COUNT(customer_key)) AS qty_customers
+FROM cust_segment
+GROUP BY customer_segment
+ORDER BY COUNT(customer_key) DESC;
