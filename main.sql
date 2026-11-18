@@ -127,3 +127,26 @@ SELECT
     END AS prev_year_sale_var_indicator
 FROM yearly_prod_sales
 ORDER BY product_name, year;
+
+
+-- Part-to-whole analysis
+
+WITH category AS (
+    SELECT
+        p.category,
+        SUM(s.sales_amount) AS total_sales,
+        ROW_NUMBER() OVER( ORDER BY 
+            SUM(s.sales_amount) DESC
+        ) AS rn
+    FROM fact_sales s
+        LEFT JOIN dim_products p
+            ON p.product_key = s.product_key
+    GROUP BY category
+)
+SELECT
+    category,
+    printf('%,d', total_sales) AS total_sales,
+    printf('%,d', SUM(total_sales) OVER()) AS overal_sales,
+    CONCAT(ROUND((CAST(total_sales AS FLOAT) / SUM(total_sales) OVER()) * 100, 2), '%') AS pct_total
+FROM category
+ORDER BY rn;
