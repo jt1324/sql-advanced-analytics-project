@@ -1,73 +1,83 @@
-# Sales Data Exploration – SQL
+# Advanced Sales Analytics – SQL
 
-An exploratory data analysis (EDA) of a retail sales dataset using **SQLite**. The project works through the data step by step: its structure, dimensions, dates, key measures, magnitude breakdowns and rankings.
+An advanced analysis of a retail sales dataset using **SQLite**. It covers trends over time, cumulative and performance metrics, segmentation, and two reusable report views for customers and products.
 
 ## Objective
 
-Get to know the dataset and answer core business questions, such as how much was sold, who buys, where they're based, and which products and customers bring in the most revenue.
+Go beyond basic exploration to answer business questions such as:
+- How do sales change over time?
+- How is each product performing against its average and against the previous year?
+- Which categories bring in the most revenue?
+- How can customers and products be grouped into useful segments?
 
 ## Data Model
 
-The dataset uses a **star schema** with one fact table and two dimension tables:
+A **star schema** with one fact table and two dimension tables:
 
 | Table | Type | Description |
 |---|---|---|
 | `fact_sales` | Fact | Sales transactions with order number, order date, quantity, price and sales amount |
-| `dim_customers` | Dimension | Customer details such as name, country, gender and birthdate |
+| `dim_customers` | Dimension | Customer details such as name, birthdate and country |
 | `dim_products` | Dimension | Product details such as name, category, subcategory and cost |
 
 `fact_sales` links to the dimensions through `customer_key` and `product_key`.
 
 ## Analysis Steps
 
-### 1. Data Exploration
-A first look at each table to understand its columns and contents.
+### 1. Changes Over Time
+Orders, customers and sales:
+- by year
+- by month, with all years combined, to spot seasonal patterns
+- by year and month
 
-### 2. Dimensions Exploration
-- The countries customers come from
-- The product hierarchy of category, subcategory and product
+### 2. Cumulative Analysis
+Monthly sales with a **running total** and a **running average price** that restart each year, using window functions.
 
-### 3. Date Exploration
-- The first and last order dates, and the number of months between them
-- The oldest and youngest customers, with their ages
+### 3. Performance Analysis
+Yearly sales for each product, compared against:
+- **the product's own average**, flagged as *Above Avg*, *Below Avg* or *Same Avg*
+- **the previous year**, using `LAG()` and flagged as *Increase*, *Decrease* or *No Changes*
 
-### 4. Measures Exploration
-The key business figures:
-- Total sales
-- Items sold
-- Average price
-- Number of orders
-- Number of customers who placed an order
-- Number of products
-- Total number of customers
+### 4. Part-to-Whole Analysis
+Each category's share of total sales, as a percentage.
 
-These are combined into a single report with `UNION ALL`, laid out as two columns: `measure_name` and `measure_value`.
+### 5. Data Segmentation
+- **Products by cost range**: Below 100, 101–500, 501–1000, Above 1000
+- **Customers by spending and lifespan**:
+  - **VIP**: at least 12 months of history and over 5,000 spent
+  - **Regular**: at least 12 months of history and 5,000 or less spent
+  - **New**: less than 12 months of history
 
-### 5. Magnitude Analysis
-Measures compared across dimensions:
-- Customers by country and by gender
-- Products by category, and average cost by category
-- Revenue by category and by customer
-- Items sold by country
+### 6. Customer Report (`report_customers` view)
+One row per customer with:
+- name, age and age group
+- customer segment (VIP, Regular or New)
+- recency (months since the last order)
+- total orders, sales, quantity and products
+- lifespan in months
+- average order value and average monthly spend
 
-### 6. Ranking Analysis
-- The top 5 and bottom 5 products by revenue, using `ORDER BY` + `LIMIT`
-- The top 5 products using `ROW_NUMBER()`
-- The top 10 and bottom 3 customers by revenue, combined into one result
+### 7. Product Report (`report_products` view)
+One row per product with:
+- name, category, subcategory and cost
+- product segment (High-Performers, Mid-Range or Low-Performers)
+- total orders, sales, quantity and customers
+- recency and lifespan in months
+- average selling price, average order revenue and average monthly revenue
 
 ## SQL Techniques Used
 
-- `SELECT DISTINCT`, `GROUP BY` and aggregates (`SUM`, `AVG`, `COUNT`, `MIN`, `MAX`)
-- `LEFT JOIN` between fact and dimension tables
-- Date handling with `strftime` and `date('now')`
-- Number formatting with `printf('%,d', ...)`
-- `UNION ALL` to build a summary report
-- The window function `ROW_NUMBER()` in subqueries for rankings
-- String concatenation with `||`
+- CTEs, including chained and nested CTEs
+- Window functions: `SUM() OVER`, `AVG() OVER`, `LAG()`, `ROW_NUMBER()`
+- `CASE` expressions for segmentation and flags
+- Date handling with `strftime`, `julianday` and `date('now')`
+- Safe division with `NULLIF` and `CASE`
+- `NULL` handling with `COALESCE` and `TRIM`
+- `CREATE VIEW` for reusable reports
 
 ## How to Run
 
-1. Import the CSV files into a SQLite database. For example:
+1. Import the CSV files into a SQLite database:
    ```
    sqlite3 sales.db
    .mode csv
@@ -79,11 +89,15 @@ Measures compared across dimensions:
    ```
    Get-Content main.sql | sqlite3 -header -column sales.db
    ```
-   You can also run each section on its own in Cursor or any SQLite tool.
+3. Query the reports:
+   ```sql
+   SELECT * FROM report_customers;
+   SELECT * FROM report_products;
+   ```
 
 ## Key Skills Demonstrated
 
-- Exploring a star-schema dataset in a structured way
-- Turning raw data into business KPIs
-- Comparing measures across dimensions
-- Ranking with window functions
+- Analysing trends and performance over time
+- Segmenting customers and products for business decisions
+- Building reusable reporting layers with views
+- Writing advanced SQL in SQLite
