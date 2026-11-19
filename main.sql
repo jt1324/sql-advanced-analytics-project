@@ -307,20 +307,22 @@ WITH prod_data AS (
     FROM fact_sales s
         LEFT JOIN dim_products p
             ON s.product_key = p.product_key
+    WHERE order_date IS NOT NULL
 ), product_aggregation AS (
 SELECT
     product_key,
     product_name,
     category,
     subcategory,
-    SUM(cost) AS total_cost,
+    cost,
     COUNT(DISTINCT order_number) AS total_orders,
     SUM(sales_amount) AS total_sales,
     SUM(quantity) AS total_quantity,
     COUNT(DISTINCT customer_key) AS total_customers,
     MAX(order_date) AS last_order_date,
     (CAST(strftime('%Y', MAX(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MAX(order_date)) AS INTEGER))
-    - (CAST(strftime('%Y', MIN(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MIN(order_date)) AS INTEGER)) AS lifespan
+    - (CAST(strftime('%Y', MIN(order_date)) AS INTEGER) * 12 + CAST(strftime('%m', MIN(order_date)) AS INTEGER)) AS lifespan,
+    ROUND(AVG(CAST(sales_amount AS FLOAT) / NULLIF(quantity, 0)),1) AS avg_selling_price
 FROM prod_data
 GROUP BY  product_key, product_name, category, subcategory
 )
@@ -349,5 +351,10 @@ SELECT
         WHEN lifespan = 0 THEN total_sales
         ELSE total_sales / lifespan 
     END AS avg_monthly_spend,
-    lifespan
+    CASE 
+        WHEN total_orders = 0 THEN 0
+        ELSE total_sales / total_orders 
+    END AS avg_order_revenue,
+    lifespan,
+    avg_selling_price
 FROM product_aggregation;
