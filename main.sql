@@ -331,7 +331,7 @@ SELECT
     product_name,
     category,
     subcategory,
-    total_cost,
+    cost,
     total_orders,
     total_sales,
     total_quantity,
@@ -358,3 +358,7 @@ SELECT
     lifespan,
     avg_selling_price
 FROM product_aggregation;
+
+SELECT
+    *
+FROM report_products;
