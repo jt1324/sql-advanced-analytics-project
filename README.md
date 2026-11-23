@@ -1,6 +1,10 @@
-# Advanced Sales Analytics – SQL
+# Advanced Sales Analytics – SQL & Power BI
 
-An advanced analysis of a retail sales dataset using **SQLite**. It covers trends over time, cumulative and performance metrics, segmentation, and two reusable report views for customers and products.
+An advanced analysis of a retail bike sales dataset using **SQLite**, with the results visualised in an interactive **Power BI** dashboard. It covers trends over time, cumulative and performance metrics, segmentation, and two reusable report views for customers and products.
+
+## Dashboard Preview
+
+![Power BI Products Dashboard](Power%20BI%20-%20Products.png)
 
 ## Objective
 
@@ -9,6 +13,17 @@ Go beyond basic exploration to answer business questions such as:
 - How is each product performing against its average and against the previous year?
 - Which categories bring in the most revenue?
 - How can customers and products be grouped into useful segments?
+
+## Repository Contents
+
+| File | Description |
+|---|---|
+| `main.sql` | The full analysis script, including the report views |
+| `db.sql` | Database setup script |
+| `datawarehouseanalytics.db` | SQLite database with the loaded data |
+| `Bike Business.pbix` | Power BI dashboard file |
+| `Power BI - Products.png` | Screenshot of the dashboard |
+| `sql-advanced-analytics-project/` | Source datasets (CSV), step-by-step scripts and project docs |
 
 ## Data Model
 
@@ -65,6 +80,28 @@ One row per product with:
 - recency and lifespan in months
 - average selling price, average order revenue and average monthly revenue
 
+## Power BI Dashboard
+
+The `Bike Business.pbix` dashboard is built on top of the SQL report views and gives a one-page view of product performance.
+
+**KPI cards**
+- Products sold: **60K**
+- Total sales: **£29M**
+- Total customers: **59K**
+- Average price: **£1.1K**
+- Average cost: **£662**
+
+**Visuals**
+- **Sales per segment**: a donut chart splitting sales across High-Performers, Mid-Range and Low-Performers
+- **Sales quantity**: a bar chart comparing Bikes, Accessories and Clothing
+- **Sales per category / subcategory**: a matrix with drill-down from category to subcategory
+- **Customers by subcategory**: a treemap showing which subcategories reach the most customers
+
+**Key insights**
+- **Bikes** bring in about **£28.3M** of the **£29.4M** total, around 96% of all revenue. Road Bikes alone account for £14.5M.
+- **Accessories** (£0.7M) and **Clothing** (£0.34M) sell in smaller amounts, but they reach the widest customer base. *Tires and Tubes*, *Bottles and Cages* and *Helmets* lead the customer count.
+- This points to a business where bikes drive revenue and low-cost accessories drive customer reach, which makes accessories a natural entry point for cross-selling.
+
 ## SQL Techniques Used
 
 - CTEs, including chained and nested CTEs
@@ -94,6 +131,7 @@ One row per product with:
    SELECT * FROM report_customers;
    SELECT * FROM report_products;
    ```
+4. Open `Bike Business.pbix` in **Power BI Desktop** to explore the dashboard.
 
 ## Key Skills Demonstrated
 
@@ -101,3 +139,5 @@ One row per product with:
 - Segmenting customers and products for business decisions
 - Building reusable reporting layers with views
 - Writing advanced SQL in SQLite
+- Building interactive dashboards and KPIs in Power BI
+- Turning analysis into clear business insights
